@@ -52,22 +52,32 @@ if __name__ == '__main__':
 
 	slide_name = []
 	ppt_name = []
+	ppt_stor = {}
 
 	for filename in glob.iglob('./Dataset/*/*.jpg', recursive=True):
-		# img = cv2.imread(filename)
 		if filename[-7:] == 'ppt.jpg':
 			ppt_name.append(filename)
+			ppt_stor[filename] = cv2.imread(filename, 0)
 		else:
 			slide_name.append(filename)
 
-
+	correct = 0
 	for slide in slide_name:
 		mx = -1.0
 		mxname = ''
+		img = cv2.imread(slide, 0)
 		for ppt in ppt_name:
 			# sift_val = sift_sim(slide, ppt)
-			cor = correlation_coefficient( cv2.imread(slide,0), cv2.imread(ppt,0) )
+			cor = correlation_coefficient( img, ppt_stor[ppt] )
 			if cor > mx:
 				mx = cor
 				mxname = ppt
-		print(slide, mxname)
+		a = slide[10:14]
+		if slide[14] != '/':
+			a += slide[14]
+		b = mxname[10:14]
+		if mxname[14] != '/':
+			b += mxname[14]
+		if a == b:
+			correct += 1
+		print(a, b, correct)
