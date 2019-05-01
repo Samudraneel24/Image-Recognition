@@ -2,56 +2,72 @@ import numpy as np
 import cv2
 import sys
 import glob
+from scipy import signal
 
 
 def sift_sim(path_a, path_b):
-    '''
-    Use SIFT features to measure image similarity
-    @args:
-      {str} path_a: the path to an image file
-      {str} path_b: the path to an image file
-    @returns:
-      TODO
-    '''
-    # initialize the sift feature detector
-    orb = cv2.ORB_create()
+		'''
+		Use SIFT features to measure image similarity
+		@args:
+			{str} path_a: the path to an image file
+			{str} path_b: the path to an image file
+		@returns:
+			TODO
+		'''
+		# initialize the sift feature detector
+		orb = cv2.ORB_create()
 
-    # get the images
-    img_a = cv2.imread(path_a)
-    img_b = cv2.imread(path_b)
+		# get the images
+		img_a = cv2.imread(path_a)
+		img_b = cv2.imread(path_b)
 
-    # find the keypoints and descriptors with SIFT
-    kp_a, desc_a = orb.detectAndCompute(img_a, None)
-    kp_b, desc_b = orb.detectAndCompute(img_b, None)
+		# find the keypoints and descriptors with SIFT
+		kp_a, desc_a = orb.detectAndCompute(img_a, None)
+		kp_b, desc_b = orb.detectAndCompute(img_b, None)
 
-    # initialize the bruteforce matcher
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+		# initialize the bruteforce matcher
+		bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
-    # match.distance is a float between {0:100} - lower means more similar
-    matches = bf.match(desc_a, desc_b)
-    similar_regions = [i for i in matches if i.distance < 70]
-    if len(matches) == 0:
-        return 0
-    return len(similar_regions) / len(matches)
+		# match.distance is a float between {0:100} - lower means more similar
+		matches = bf.match(desc_a, desc_b)
+		similar_regions = [i for i in matches if i.distance < 70]
+		if len(matches) == 0:
+				return 0
+		return len(similar_regions) / len(matches)
 
+
+def correlation_coefficient(im1, im2):
+	if im1.shape != im2.shape:
+		dim = (im2.shape[1], im2.shape[0])
+		im1 = cv2.resize(im1, dsize = dim);
+	product = np.mean((im1 - im1.mean()) * (im2 - im2.mean()))
+	stds = im1.std() * im2.std()
+	if stds == 0:
+		return 0
+	else:
+		product /= stds
+		return product
 
 if __name__ == '__main__':
 
-	slide_arr = []
-	ppt_arr = []
-	for filename in glob.iglob('./Dataset/*/ppt.jpg', recursive=True):
-		img = cv2.imread(filename)
-		ppt_arr.append((filename, img))
-		print(ppt_arr[1])
-	
-	# for filename in glob.iglob('./Dataset/*/*.jpg', recursive=True):
-	# 	img = cv2.imread(filename)
-	# 	# print("l")
-	# 	if [filename, img] not in ppt_arr:
-	# 		slide_arr.append([filename, img])
+	slide_name = []
+	ppt_name = []
 
-	# print(slide_arr)
-    # img_a = sys.argv[1]
-    # img_b = sys.argv[2]
-    # sift_sim = sift_sim(img_a, img_b)
-    # print(sift_sim)
+	for filename in glob.iglob('./Dataset/*/*.jpg', recursive=True):
+		# img = cv2.imread(filename)
+		if filename[-7:] == 'ppt.jpg':
+			ppt_name.append(filename)
+		else:
+			slide_name.append(filename)
+
+
+	for slide in slide_name:
+		mx = -1.0
+		mxname = ''
+		for ppt in ppt_name:
+			# sift_val = sift_sim(slide, ppt)
+			cor = correlation_coefficient( cv2.imread(slide,0), cv2.imread(ppt,0) )
+			if cor > mx:
+				mx = cor
+				mxname = ppt
+		print(slide, mxname)
